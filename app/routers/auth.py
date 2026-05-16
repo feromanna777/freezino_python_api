@@ -1,9 +1,11 @@
 # app/routers/auth.py
 
-
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, status , Depends
 import sqlite3
-
+from app.logging import logger
+from jose import JWTError
+from app.db import get_connection
 
 
 from app.security import (
@@ -16,22 +18,27 @@ from app.models.user import UserRegister, UserLogin
 #
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-@router.post("/api/auth/login")
+@router.post("/login")
 def login_user(user_data: UserLogin):
+    conn = None
     try:
-        conn = sqlite3.connect("freezino.db")
+        conn =  get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE email = ?", (user_data.email,))
         user_db = cursor.fetchone()
 
         if user_db is None:
+            logger.info("Login attempt with unknown email: %s", user_data.email)
             raise HTTPException(status_code=401, detail="Неверный логин или пароль")
 
         password_hash_from_db = user_db["password_hash"]
 
         if not verify_password(user_data.password, password_hash_from_db):
+            logger.info("Login attempt with unknown email: %s", user_data.email)
             raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+
+
 
         return {
             "success": True,
@@ -46,19 +53,26 @@ def login_user(user_data: UserLogin):
                 "refresh_token": "fake2",
             },
         }
-    except Exception as e:
-        print(f"Error: {e}")
-        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
+
+    except JWTError as e:
+    # Ошибка генерации токена: логируем, клиенту — 500 (это баг на нашей стороне)
+        logger.exception("JWT creation failed for email: %s", user_data.email)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка аутентификации"
+        )
+
+
     finally:
-        if "conn" in locals():
+        if conn:
             conn.close()
 
-
-@router.post("/api/auth/register")
+@router.post("/register")
 def register_user(user: UserRegister):
     hashed_password = get_password_hash(user.password)
+    conn = None
     try:
-        conn = sqlite3.connect("freezino.db")
+        conn = get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute(
@@ -70,6 +84,7 @@ def register_user(user: UserRegister):
         )
         conn.commit()
         new_user_id = cursor.lastrowid
+        logger.info("User registered successfully: %s", user.email)
 
         return {
             "success": True,
@@ -84,25 +99,21 @@ def register_user(user: UserRegister):
                 "refresh_token": "fake2",
             },
         }
-    except sqlite3.IntegrityError:
+    except sqlite3.IntegrityError as e:
+        # Ожидаемая бизнес-ошибка: дубликат email/username
+        logger.warning(
+            "Registration failed (duplicate): email=%s, username=%s, error=%s",
+            user.email, user.username, str(e)
+        )
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Пользователь с таким username или email уже существует",
         )
-    except Exception as e:
-        print(f"Registration Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
     finally:
-        if "conn" in locals():
+        if conn:
             conn.close()
 
-
-@router.get("/api/health")
-def health_status():
-    return {"status": "IT'S ALIVE", "timestamp": datetime.now().isoformat()}
-
-
-@router.get("/api/auth/me")
+@router.get("/me")
 def read_users_me(current_user=Depends(get_current_user)):
     return {
         "user": {
