@@ -1,6 +1,5 @@
 # app/db.py
 import sqlite3
-from app.config import DATABASE_PATH
 from typing import Generator
 from app.config import settings
 
@@ -13,13 +12,13 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
         conn.close()
 
 def get_connection():
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(settings.db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_db():
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(settings.db_path)
     cursor = conn.cursor()
     cursor.execute(
         """
@@ -55,4 +54,3 @@ def init_db():
         """
     )
     conn.commit()
-    conn.close()

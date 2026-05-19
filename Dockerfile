@@ -2,9 +2,9 @@
 #
 # Freezino Python API — backend image
 #
-# NOTE: the app hardcodes the SQLite path relative to CWD, ignoring the
-# DB_PATH env var. docker/entrypoint.sh symlinks the persistent volume
-# file into CWD as a workaround. Tracked in DO-016.
+# NOTE: main.py hardcodes sqlite3.connect("freezino.db") relative
+# to CWD, ignoring DB_PATH env var. docker/entrypoint.sh symlinks the
+# persistent volume file into CWD as a workaround. Tracked in DO-016.
 
 # ================================
 # Build stage — install deps into a user-local site-packages dir
