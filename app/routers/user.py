@@ -107,3 +107,17 @@ def get_stats(current_user: Any = Depends(get_current_user)):
     finally:
         if conn is not None:
             conn.close()
+
+
+@router.get("/transactions")
+def get_transactions():
+    return {"success": True, "data": [], "total": 0}
+
+@router.get("/items")
+def get_user_items():
+    return {"success": True, "data": []}
+
+@router.patch("/profile")
+def update_profile():
+    """Stub: Update user profile endpoint."""
+    raise HTTPException(status_code=501, detail="Not implemented yet")

@@ -124,3 +124,20 @@ def read_users_me(current_user=Depends(get_current_user)):
             "avatar": current_user["avatar"],
         }
     }
+
+
+@router.post("/refresh")
+def refresh_token():
+    raise HTTPException(status_code=501, detail="Not implemented yet")
+
+@router.post("/logout")
+def logout():
+    raise HTTPException(status_code=501, detail="Not implemented yet")
+
+@router.get("/google")
+def google_login():
+    raise HTTPException(status_code=501, detail="Not implemented yet")
+
+@router.get("/google/callback")
+def google_callback():
+    raise HTTPException(status_code=501, detail="Not implemented yet")
