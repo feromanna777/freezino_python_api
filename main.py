@@ -1,10 +1,11 @@
 # main.py
 from fastapi import FastAPI
 from app.db import init_db
-from app.routers import auth, user, shop, stats, health
-from app.routers import work, games, loans
+from app.routers import auth, user, shop, stats, health, contact, work, games, loans,dev
+
 from app.logging import setup_logging, logger
 from contextlib import asynccontextmanager
+
 
 
 @asynccontextmanager
@@ -37,7 +38,8 @@ app.include_router(games.router)
 app.include_router(loans.router)
 app.include_router(stats.router)
 app.include_router(health.router)
-
+app.include_router(contact.router)
+app.include_router(dev.router)
 
 
 

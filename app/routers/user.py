@@ -66,14 +66,35 @@ def get_stats(current_user: Any = Depends(get_current_user),   db: sqlite3.Conne
         )
         row = cursor.fetchone()
         if row is None:
-            raise HTTPException(status_code=400, detail="No user found")
-        else:
-            return {
-                "total_work_time": current_user["total_work_time"],
-                "total_earned": current_user["total_earned"],
-                "total_lost": current_user["total_lost"],
-                "games_played": current_user["games_played"],
-            }
-    except Exception as e:
-        print(f"Error: {e}")
-        raise HTTPException(status_code=400, detail=f"Ошибка сервера: {str(e)}") from e
+            logger.warning("User stats not found: id=%s", current_user["id"])
+            raise HTTPException(status_code=404, detail="No user found")
+        logger.info("Stats fetched: id=%s", current_user["id"])
+        return {
+            "total_work_time": current_user["total_work_time"],
+            "total_earned": current_user["total_earned"],
+            "total_lost": current_user["total_lost"],
+            "games_played": current_user["games_played"],
+        }
+    except sqlite3.Error as e:
+        logger.exception("Database error in get_stats for user id=%s", current_user["id"])
+        raise HTTPException(status_code=500, detail="Database error")
+
+
+
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@router.get("/transactions")
+def get_transactions():
+    return {"success": True, "data": [], "total": 0}
+
+@router.get("/items")
+def get_user_items():
+    return {"success": True, "data": []}
+
+@router.patch("/profile")
+def update_profile():
+    """Stub: Update user profile endpoint."""
+    raise HTTPException(status_code=501, detail="Not implemented yet")
